@@ -192,13 +192,17 @@ cabalInstallHie versionNumber = do
     , "exe:hie"
     , "--overwrite-policy=always"
     ]
-  copyFile' (localBin </> "hie" <.> exe)
-            (localBin </> "hie-" ++ versionNumber <.> exe)
-  copyFile' (localBin </> "hie" <.> exe)
-            (localBin </> "hie-" ++ dropExtension versionNumber <.> exe)
+  let hie      = "hie" <.> exe
+  let hieMinor = localBin </> "hie-" ++ versionNumber <.> exe
+  let hieMajor = localBin </> "hie-" ++ dropExtension versionNumber <.> exe
+
+  copyFile' (localBin </> hie) hieMinor
+  copyFile' (localBin </> hie) hieMajor
+  need [hieMinor, hieMajor]
+
 
 cabalBuildDoc :: Action ()
-cabalBuildDoc = generateHoogleDatabase $ do 
+cabalBuildDoc = generateHoogleDatabase $ do
   localBin <- getLocalBin
   execCabal_ ["new-install", "--symlink-bindir=" ++ localBin, "hoogle"]
   execCabal_ ["new-exec", "hoogle", "generate"]
@@ -207,8 +211,8 @@ generateHoogleDatabase :: Action () -> Action ()
 generateHoogleDatabase installIfNecessary = do
   mayHoogle <- liftIO $ findExecutable "hoogle"
   case mayHoogle of
-    Nothing -> installIfNecessary
-    Just hoogle -> command_ [] "hoogle" ["generate"]
+    Nothing     -> installIfNecessary
+    Just hoogle -> command_ [] hoogle ["generate"]
 
 
 cabalTest :: VersionNumber -> Action ()
@@ -231,13 +235,15 @@ stackBuildHie versionNumber = do
 stackInstallHie :: VersionNumber -> Action ()
 stackInstallHie versionNumber = do
   execStackWithYaml_ versionNumber ["install"]
-  localBinDir      <- getLocalBin
+  localBin         <- getLocalBin
   localInstallRoot <- getLocalInstallRoot versionNumber
-  let hie = "hie" <.> exe
-  copyFile' (localInstallRoot </> "bin" </> hie)
-            (localBinDir </> "hie-" ++ versionNumber <.> exe)
-  copyFile' (localInstallRoot </> "bin" </> hie)
-            (localBinDir </> "hie-" ++ dropExtension versionNumber <.> exe)
+  let hie      = "hie" <.> exe
+  let hieMinor = localBin </> "hie-" ++ versionNumber <.> exe
+  let hieMajor = localBin </> "hie-" ++ dropExtension versionNumber <.> exe
+
+  copyFile' (localInstallRoot </> hie) hieMinor
+  copyFile' (localInstallRoot </> hie) hieMajor
+  need [hieMinor, hieMajor]
 
 buildCopyCompilerTool :: VersionNumber -> Action ()
 buildCopyCompilerTool versionNumber =
