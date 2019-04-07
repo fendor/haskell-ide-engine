@@ -10,6 +10,7 @@ import           Data.Aeson                     (Value (Null))
 import qualified Data.ByteString.Lazy           as BS
 import qualified Data.Text                      as T
 import qualified Data.Text.Encoding             as T
+import           Data.Maybe
 import           Floskell
 import           Haskell.Ide.Engine.MonadTypes
 import           Haskell.Ide.Engine.PluginUtils
@@ -28,9 +29,9 @@ floskellDescriptor plId = PluginDescriptor
   }
 
 provider :: FormattingProvider
-provider uri typ _opts =
-  pluginGetFile "Floskell: " uri $ \file -> do
-    config <- liftIO $ findConfigOrDefault file
+provider uri typ _opts = do
+    root <- getRootPath
+    config <- liftIO $ findConfigOrDefault (fromMaybe "" root)
     mContents <- readVFS uri
     case mContents of
       Nothing -> return $ IdeResultFail (IdeError InternalError "File was not open" Null)

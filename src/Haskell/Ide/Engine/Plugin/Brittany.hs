@@ -18,7 +18,7 @@ import           Language.Haskell.Brittany
 import qualified Language.Haskell.LSP.Types            as J
 import qualified Language.Haskell.LSP.Types.Lens       as J
 import           System.FilePath (FilePath, takeDirectory)
-import           Data.Maybe (maybeToList)
+import           Data.Maybe (maybeToList, fromMaybe)
 
 data FormatParams = FormatParams Int Uri (Maybe Range)
      deriving (Eq, Show, Generic, FromJSON, ToJSON)
@@ -37,27 +37,27 @@ brittanyDescriptor plId = PluginDescriptor
   }
 
 provider :: FormattingProvider
-provider uri formatType opts = pluginGetFile "brittanyCmd: " uri $ \file -> do
-  confFile <- liftIO $ getConfFile file
-  mtext <- readVFS uri
+provider uri formatType opts = do
+  root <- getRootPath
+  confFile <- liftIO $ getConfFile (fromMaybe "" root)
+  mtext    <- readVFS uri
   case mtext of
-    Nothing -> return $ IdeResultFail (IdeError InternalError "File was not open" Null)
+    Nothing   -> return $ IdeResultFail (IdeError InternalError "File was not open" Null)
     Just text -> case formatType of
       FormatRange r -> do
         res <- liftIO $ runBrittany tabSize confFile $ extractRange r text
         case res of
-          Left err -> return $ IdeResultFail (IdeError PluginError
-                      (T.pack $ "brittanyCmd: " ++ unlines (map showErr err)) Null)
+          Left err ->
+            return $ IdeResultFail (IdeError PluginError (T.pack $ "brittanyCmd: " ++ unlines (map showErr err)) Null)
           Right newText -> do
             let textEdit = J.TextEdit (normalize r) newText
             return $ IdeResultOk [textEdit]
       FormatDocument -> do
         res <- liftIO $ runBrittany tabSize confFile text
         case res of
-          Left err -> return $ IdeResultFail (IdeError PluginError
-                      (T.pack $ "brittanyCmd: " ++ unlines (map showErr err)) Null)
-          Right newText ->
-            return $ IdeResultOk [J.TextEdit (fullRange text) newText]
+          Left err ->
+            return $ IdeResultFail (IdeError PluginError (T.pack $ "brittanyCmd: " ++ unlines (map showErr err)) Null)
+          Right newText -> return $ IdeResultOk [J.TextEdit (fullRange text) newText]
   where tabSize = opts ^. J.tabSize
 
 normalize :: Range -> Range
@@ -66,7 +66,7 @@ normalize (Range (Position sl _) (Position el _)) =
   Range (Position sl 0) (Position (el + 1) 0)
 
 getConfFile :: FilePath -> IO (Maybe FilePath)
-getConfFile = findLocalConfigPath . takeDirectory
+getConfFile = findLocalConfigPath
 
 runBrittany :: Int              -- ^ tab  size
             -> Maybe FilePath   -- ^ local config file
