@@ -35,6 +35,9 @@ import           Language.Haskell.HLint3           as Hlint
 import qualified Language.Haskell.LSP.Types        as LSP
 import qualified Language.Haskell.LSP.Types.Lens   as LSP
 import           Refact.Apply
+import           System.Directory               ( getXdgDirectory
+                                                , XdgDirectory(XdgData)
+                                                )
 
 -- ---------------------------------------------------------------------
 {-# ANN module ("HLint: ignore Eta reduce"         :: String) #-}
@@ -274,7 +277,8 @@ applyHint fp mhint fileMap = do
 -- | Gets HLint ideas for
 getIdeas :: MonadIO m => FilePath -> Maybe OneHint -> ExceptT String m [Idea]
 getIdeas lintFile mhint = do
-  let hOpts = hlintOpts lintFile (oneHintPos <$> mhint)
+  dataDir <- liftIO $ getXdgDirectory XdgData "hlint"
+  let hOpts = hlintOpts lintFile (oneHintPos <$> mhint) (Just dataDir)
   ideas <- runHlint lintFile hOpts
   pure $ maybe ideas (`filterIdeas` ideas) mhint
 
@@ -287,12 +291,12 @@ filterIdeas (OneHint (Position l c) title) ideas =
     ideaPos = (srcSpanStartLine &&& srcSpanStartColumn) . ideaSpan
   in filter (\i -> ideaHint i == title' && ideaPos i == (l+1, c+1)) ideas
 
-hlintOpts :: FilePath -> Maybe Position -> [String]
-hlintOpts lintFile mpos =
-  let
-    posOpt (Position l c) = " --pos " ++ show (l+1) ++ "," ++ show (c+1)
-    opts = maybe "" posOpt mpos
-  in [lintFile, "--quiet", "--refactor", "--refactor-options=" ++ opts ]
+hlintOpts :: FilePath -> Maybe Position -> Maybe String -> [String]
+hlintOpts lintFile mpos datadir =
+  let posOpt (Position l c) = " --pos " ++ show (l + 1) ++ "," ++ show (c + 1)
+      opts = maybe "" posOpt mpos
+  in [lintFile, "--quiet", "--refactor", "--refactor-options=" ++ opts]
+     ++ maybe [] (\dir -> ["--datadir=" ++ dir]) datadir
 
 runHlint :: MonadIO m => FilePath -> [String] -> ExceptT String m [Idea]
 runHlint fp args =
