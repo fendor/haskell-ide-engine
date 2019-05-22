@@ -75,7 +75,7 @@ data AddParams = AddParams
 
 -- | FilePath to a cabal package description file.
 type CabalFilePath = FilePath
--- | FilePath to a package.yaml package description file.
+-- | FilePath to a hpack package description file (package.yaml).
 type HpackFilePath = FilePath
 -- | FilePath to a module within the project.
 -- May be used to establish what component the dependency shall be added to.
