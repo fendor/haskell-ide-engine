@@ -31,8 +31,9 @@ spec = describe "behaviour on malformed projects" $ do
           d ^. severity `shouldBe` (Just DsError)
           d ^. code `shouldBe` Nothing
           d ^. source `shouldBe` Just "ghcmod"
-          d ^. message `shouldBe`
-            (T.pack "readCreateProcess: stack \"build\" \"--only-configure\" \".\" (exit 1): failed\n")
+          let msg = T.unpack (d ^. message)
+          msg `shouldContain` "callProcessStderr:"
+          msg `shouldContain` "build --only-configure . (exit 1): failed\n"
 
     -- ---------------------------------
 
