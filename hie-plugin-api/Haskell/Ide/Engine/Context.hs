@@ -7,6 +7,7 @@ import qualified GhcModCore as GM (GhcPs) -- for GHC 8.2.2
 import Haskell.Ide.Engine.PluginUtils
 import Control.Applicative ( (<|>) )
 
+
 -- | A context of a declaration in the program
 -- e.g. is the declaration a type declaration or a value declaration
 -- Used for determining which code completions to show
