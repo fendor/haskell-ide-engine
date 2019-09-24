@@ -11,7 +11,6 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DerivingVia #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
@@ -748,6 +747,8 @@ instance Alternative (GhcT IdeM) where
     {-# INLINE (<|>) #-}
     m <|> n = GhcT $ \s ->  unGhcT m s <|> unGhcT n s
 
+-- ghc-8.6 required
+-- {-# LANGUAGE DerivingVia #-}
 -- deriving via (ReaderT Session IO) instance MonadUnliftIO Ghc
 -- deriving via (ReaderT Session IdeM) instance MonadUnliftIO (GhcT IdeM)
 -- deriving via (ReaderT Session IdeM) instance MonadBaseControl IO (GhcT IdeM)
