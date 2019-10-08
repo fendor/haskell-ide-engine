@@ -133,7 +133,7 @@ run opts = do
 
   let initOpts = defaultCradleOpts { cradleOptsVerbosity = verbosity }
       verbosity = if optBiosVerbose opts then Verbose else Silent
-      -- biosLogLevel = if optBiosVerbose opts then L.DEBUG else L.INFO
+      biosLogLevel = if optBiosVerbose opts then L.DEBUG else L.INFO
       -- Running HIE on projects with -Werror breaks most of the features since all warnings
       -- will be treated with the same severity of type errors. In order to offer a more useful
       -- experience, we make sure warnings are always reported as warnings by setting -Wwarn
