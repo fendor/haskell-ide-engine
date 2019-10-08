@@ -138,7 +138,7 @@ run opts = do
       -- will be treated with the same severity of type errors. In order to offer a more useful
       -- experience, we make sure warnings are always reported as warnings by setting -Wwarn
 --      ghcModOptions = defaultOpts { GM.optGhcUserOptions = ["-Wwarn"] }
-  -- Core.setupLogger mLogFileName ["hie-bios"] biosLogLevel
+  Core.setupLogger mLogFileName ["hie-bios"] biosLogLevel
 
   when (optBiosVerbose opts) $
     logm "Enabling verbose mode for hie-bios. Output will be on stderr"
