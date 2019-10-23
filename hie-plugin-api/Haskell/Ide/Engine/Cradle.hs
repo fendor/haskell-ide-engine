@@ -13,7 +13,6 @@ import           Data.Function ((&))
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.List.NonEmpty (NonEmpty)
 import           System.FilePath
-import           System.Directory
 import qualified Data.Map as M
 import           Data.List (inits, sortOn, isPrefixOf, find)
 import           Data.Maybe (listToMaybe)
