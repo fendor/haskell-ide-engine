@@ -31,6 +31,7 @@ import           System.FilePath
 
 import Documentation.Haddock
 import Documentation.Haddock.Types
+import           Debug.Trace
 
 haddockDescriptor :: PluginId -> PluginDescriptor
 haddockDescriptor plId = PluginDescriptor
@@ -105,7 +106,9 @@ getDocsForName df name = do
     Nothing -> pure Nothing
     Just fs -> liftIO $ listToMaybe <$> filterM doesFileExist fs
   case mf of
-    Nothing -> return Nothing
+    Nothing -> do
+      lift . debugm $ "getDocsForName, mf is nothing"
+      return Nothing
     Just f -> do
       ehi <- readInterfaceFile nameCacheFromIdeM f
       case ehi of
@@ -114,16 +117,20 @@ getDocsForName df name = do
           return Nothing
         Right hi -> do
           let res = do -- @Maybe
+                traceShowM ("Start `getDocsForName`" :: String)
                 mdl <- nameModule_maybe name
-                lmdl <- Map.lookup name (ifLinkEnv hi)
-                insiface <- find ((mdl ==) . instMod) $ ifInstalledIfaces hi
-                doc <- Map.lookup name $ instDocMap insiface
+                lmdl <- trace "After mdl" $ Map.lookup name (ifLinkEnv hi)
+                insiface <- trace "After lmdl" $ find ((mdl ==) . instMod) $ ifInstalledIfaces hi
+                doc <- trace "After insiface" $ Map.lookup name $ instDocMap insiface
                 return (renderDocs doc, mdl, lmdl)
           case res of
             Nothing -> return Nothing
             Just (doc, mdl, lmdl) -> do
+              lift . debugm $ "getDocsForName, result doc: " <> show doc
               mdoch <- liftIO $ lookupDocHtmlForModule df lmdl
               msrch <- liftIO $ lookupSrcHtmlForModule df mdl
+              lift . debugm $ "getDocsForName, result mdoch: " <> show mdoch
+              lift . debugm $ "getDocsForName, result msrch: " <> show msrch
               let selector
                     | isValName name = "v:"
                     | otherwise = "t:"
@@ -136,6 +143,7 @@ getDocsForName df name = do
 getDocsWithType :: DynFlags -> Name -> IdeM (Maybe T.Text)
 getDocsWithType df name = do
   mdocs <- getDocsForName df name
+  lift . debugm $ "hover, getDocsWithType(getDocsForName): " <> show mdocs
   mtyp <- getTypeForName name
   return $ case (mdocs,mtyp) of
     (Nothing, Nothing) ->
@@ -211,6 +219,7 @@ hoverProvider doc pos = pluginGetFile "haddock:hoverProvider" doc $ \fp ->
           let mname = "`"<> sname <> "`\n\n"
           let minfo = maybe "" (<>" ") pkg <> mdl
           mdocu' <- lift $ getDocsWithType df name
+          lift $ debugm $ "hover, found haddock documentation: " <> show mdocu'
           mdocu <- case mdocu' of
             Just _ -> return mdocu'
             -- Hoogle as fallback
@@ -218,6 +227,7 @@ hoverProvider doc pos = pluginGetFile "haddock:hoverProvider" doc $ \fp ->
           return $ case mdocu of
             Nothing -> mname <> minfo
             Just docu -> docu <> "\n\n" <> minfo
+    lift $ debugm $ "hover, final documentation: " <> show docs
     return [J.Hover (J.HoverContents $ J.MarkupContent J.MkMarkdown (T.intercalate J.sectionSeparator docs)) Nothing]
   where
     pickName [] = Nothing
